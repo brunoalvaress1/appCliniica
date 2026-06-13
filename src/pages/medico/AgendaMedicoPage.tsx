@@ -168,9 +168,7 @@ export function AgendaMedicoPage() {
                     <Check className="w-4 h-4 mr-2" />Finalizar
                   </Button>
                 )}
-                <Button variant="danger" onClick={() => atualizarStatus(consultaSelecionada.id, 'cancelada')}>
-                  <XCircle className="w-4 h-4 mr-2" />Cancelar
-                </Button>
+                
               </div>
             </CardContent>
           </Card>
