@@ -283,22 +283,22 @@ export function LandingPage() {
     <h3 className="text-lg font-bold mb-4 text-center">Acessos Rápidos</h3>
     
     <div className="grid grid-cols-2 gap-4 text-center">
-      <a href="/admin/login" className="p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+      <a href="/admin/LogsPage" className="p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
         <p className="font-bold">Admin</p>
         <p className="text-xs text-gray-400">Painel administrativo</p>
       </a>
       
-      <a href="/medico/login" className="p-3 bg-blue-600 rounded-lg hover:bg-blue-500 transition">
+      <a href="/medico/LoginMedicoPage" className="p-3 bg-blue-600 rounded-lg hover:bg-blue-500 transition">
         <p className="font-bold">Médico</p>
         <p className="text-xs text-blue-200">Agenda médica</p>
       </a>
       
-      <a href="/recepcao/login" className="p-3 bg-green-600 rounded-lg hover:bg-green-500 transition">
+      <a href="/recepcao/RecepcaoPage" className="p-3 bg-green-600 rounded-lg hover:bg-green-500 transition">
         <p className="font-bold">Recepção</p>
         <p className="text-xs text-green-200">Atendimento</p>
       </a>
       
-      <a href="/convenio/login" className="p-3 bg-purple-600 rounded-lg hover:bg-purple-500 transition">
+      <a href="/convenio/LoginConvenioPage" className="p-3 bg-purple-600 rounded-lg hover:bg-purple-500 transition">
         <p className="font-bold">Convênio</p>
         <p className="text-xs text-purple-200">Área conveniada</p>
       </a>
