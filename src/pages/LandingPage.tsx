@@ -277,57 +277,38 @@ export function LandingPage() {
       </section>
 
       {/* ==================== FOOTER ==================== */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
-            {/* Logo */}
-            <div className="col-span-2 md:col-span-1">
-              <Link to="/" className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-teal-600 rounded-xl flex items-center justify-center">
-                  <Stethoscope className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <span className="text-xl font-bold">Clínica Musumeci</span>
-                  <span className="text-xs text-gray-400 block">Otorrinolaringologia</span>
-                </div>
-              </Link>
-              <p className="mt-4 text-gray-400">
-                Cuidando da sua saúde auditiva e respiratória com excelência.
-              </p>
-            </div>
-
-            {/* Links */}
-            <div>
-              <h4 className="font-semibold mb-4">Serviços</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Audiologia</a></li>
-                <li><a href="#" className="hover:text-white">Rinite</a></li>
-                <li><a href="#" className="hover:text-white">Apneia</a></li>
-                <li><a href="#" className="hover:text-white">Zumbido</a></li>
-              </ul>
-            </div>
-
-            {/* Contato */}
-            <div>
-              <h4 className="font-semibold mb-4">Contato</h4>
-              <ul className="space-y-3 text-gray-400">
-                <li className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  {telefone}
-                </li>
-                <li className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  {endereco}
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>© 2025 Clínica Musumeci. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </footer>
+      {/* RODAPÉ */}
+<footer className="bg-gray-800 text-white py-8 mt-auto">
+  <div className="container mx-auto px-4">
+    <h3 className="text-lg font-bold mb-4 text-center">Acessos Rápidos</h3>
+    
+    <div className="grid grid-cols-2 gap-4 text-center">
+      <a href="/admin/login" className="p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+        <p className="font-bold">Admin</p>
+        <p className="text-xs text-gray-400">Painel administrativo</p>
+      </a>
+      
+      <a href="/medico/login" className="p-3 bg-blue-600 rounded-lg hover:bg-blue-500 transition">
+        <p className="font-bold">Médico</p>
+        <p className="text-xs text-blue-200">Agenda médica</p>
+      </a>
+      
+      <a href="/recepcao/login" className="p-3 bg-green-600 rounded-lg hover:bg-green-500 transition">
+        <p className="font-bold">Recepção</p>
+        <p className="text-xs text-green-200">Atendimento</p>
+      </a>
+      
+      <a href="/convenio/login" className="p-3 bg-purple-600 rounded-lg hover:bg-purple-500 transition">
+        <p className="font-bold">Convênio</p>
+        <p className="text-xs text-purple-200">Área conveniada</p>
+      </a>
+    </div>
+    
+    <div className="text-center mt-8 text-gray-400 text-sm">
+      <p>© 2024 Clínica App - Todos os direitos reservados</p>
+    </div>
+  </div>
+</footer>
     </div>
   )
 }
