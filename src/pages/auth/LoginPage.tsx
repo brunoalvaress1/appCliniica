@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
-import { User, Phone, Lock, Mail, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 export function LoginPage() {
@@ -12,17 +12,17 @@ export function LoginPage() {
   const [mostrarSenha, setMostrarSenha] = useState(false)
   
   const [dados, setDados] = useState({
-    cpf: '',
+    email: '',
     senha: '',
     nome: '',
     telefone: '',
-    email: ''
+    cpf: ''
   })
 
   // 🔐 LOGIN
   const fazerLogin = async () => {
-    if (!dados.cpf || !dados.senha) {
-      alert('Preencha CPF e Senha!')
+    if (!dados.email || !dados.senha) {
+      alert('Preencha Email e Senha!')
       return
     }
 
@@ -31,12 +31,12 @@ export function LoginPage() {
     const { data, error } = await supabase
       .from('usuarios')
       .select('*')
-      .eq('cpf', dados.cpf)
+      .eq('email', dados.email)
       .eq('senha', dados.senha)
       .single()
 
     if (error || !data) {
-      alert('CPF ou Senha incorretos!')
+      alert('Email ou Senha incorretos!')
       setLoading(false)
       return
     }
@@ -119,7 +119,7 @@ export function LoginPage() {
   }
 
   const limparCampos = () => {
-    setDados({ cpf: '', senha: '', nome: '', telefone: '', email: '' })
+    setDados({ email: '', senha: '', nome: '', telefone: '', cpf: '' })
   }
 
   return (
@@ -131,7 +131,7 @@ export function LoginPage() {
           </h1>
           <p className="text-center text-gray-500 mb-6">
             {modo === 'login' 
-              ? 'Entre com seu CPF e senha' 
+              ? 'Entre com seu email e senha' 
               : 'Preencha seus dados para se cadastrar'}
           </p>
 
@@ -142,11 +142,10 @@ export function LoginPage() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Nome completo</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
                       placeholder="Seu nome completo"
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl"
+                      className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
                       value={dados.nome}
                       onChange={(e) => setDados({ ...dados, nome: e.target.value })}
                     />
@@ -154,46 +153,44 @@ export function LoginPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Telefone</label>
+                  <label className="block text-sm font-medium mb-1">CPF</label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="(11) 99999-9999"
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl"
-                      value={dados.telefone}
-                      onChange={(e) => setDados({ ...dados, telefone: e.target.value })}
+                      placeholder="000.000.000-00"
+                      className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
+                      value={dados.cpf}
+                      onChange={(e) => setDados({ ...dados, cpf: e.target.value })}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <label className="block text-sm font-medium mb-1">Telefone</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
-                      type="email"
-                      placeholder="seu@email.com"
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl"
-                      value={dados.email}
-                      onChange={(e) => setDados({ ...dados, email: e.target.value })}
+                      type="text"
+                      placeholder="(11) 99999-9999"
+                      className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
+                      value={dados.telefone}
+                      onChange={(e) => setDados({ ...dados, telefone: e.target.value })}
                     />
                   </div>
                 </div>
               </>
             )}
 
-            {/* CPF - ambos modos */}
+            {/* EMAIL - ambos modos */}
             <div>
-              <label className="block text-sm font-medium mb-1">CPF</label>
+              <label className="block text-sm font-medium mb-1">Email</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="text"
-                  placeholder="000.000.000-00"
+                  type="email"
+                  placeholder="seu@email.com"
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl"
-                  value={dados.cpf}
-                  onChange={(e) => setDados({ ...dados, cpf: e.target.value })}
+                  value={dados.email}
+                  onChange={(e) => setDados({ ...dados, email: e.target.value })}
                 />
               </div>
             </div>
