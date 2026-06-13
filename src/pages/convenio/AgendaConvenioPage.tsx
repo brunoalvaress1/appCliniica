@@ -1,329 +1,124 @@
 // src/pages/convenio/AgendaConvenioPage.tsx
+
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent } from '../../components/ui/Card'
+import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/Input'
-import { 
-  Calendar, Clock, Stethoscope,
-  ChevronLeft, ChevronRight, MessageCircle, 
-  Check, Plus, History, UserPlus
-} from 'lucide-react'
+import { Badge } from '../../components/ui/Badge'
+import { Calendar, ChevronLeft, ChevronRight, Clock, User, Stethoscope, Phone, X, DollarSign, Check, Plus, FileText, Activity, CheckCircle, XCircle, Bell, LogOut, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { format, addDays, parseISO } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+
+interface Paciente { id: string; nome: string; cpf: string; telefone: string }
+interface Consulta { id: string; data: string; hora: string; status: string; valor: number; tipo: string; paciente_id: string; medico_id: string; paciente: Paciente }
 
 export function AgendaConvenioPage() {
   const navigate = useNavigate()
-  const [convenioNome, setConvenioNome] = useState('')
-  const [convenioValor, setConvenioValor] = useState(200)
-  const [consultas, setConsultas] = useState<any[]>([])
-  const [historico, setHistorico] = useState<any[]>([])
-  const [dataSelecionada, setDataSelecionada] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [loading, setLoading] = useState(false)
-  const [showCriar, setShowCriar] = useState(false)
-  const [showHistorico, setShowHistorico] = useState(false)
-  const [showCadastrar, setShowCadastrar] = useState(false)
-  const [medicos, setMedicos] = useState<any[]>([])
+  const [medicoId, setMedicoId] = useState('')
+  const [medicoNome, setMedicoNome] = useState('')
+  const [dataSelecionada, setDataSelecionada] = useState(new Date())
+  const [consultas, setConsultas] = useState<Consulta[]>([])
+  const [loading, setLoading] = useState(true)
+  const [consultaSelecionada, setConsultaSelecionada] = useState<Consulta | null>(null)
+  const [showModal, setShowModal] = useState<string | null>(null)
   const [pacientes, setPacientes] = useState<any[]>([])
-  
-  const [novaConsulta, setNovaConsulta] = useState({
-    paciente_id: '',
-    medico_id: '',
-    data: format(new Date(), 'yyyy-MM-dd'),
-    hora: '09:00'
-  })
-
-  const [novoPaciente, setNovoPaciente] = useState({
-    nome: '',
-    cpf: '',
-    telefone: '',
-    whatsapp: '',
-    cidade: ''
-  })
+  const [busca, setBusca] = useState('')
+  const [novaConsulta, setNovaConsulta] = useState({ paciente_id: '', medico_id: '', data: '', hora: '' })
 
   useEffect(() => {
-    const nome = localStorage.getItem('convenio_nome')
-    const tipo = localStorage.getItem('convenio_tipo')
-    
-    if (!nome) {
-      navigate('/convenio/login')
-      return
-    }
-    
-    setConvenioNome(nome)
-    
-    if (tipo === 'particular') {
-      setConvenioValor(200)
-    } else {
-      buscarValor(nome)
-    }
-    
-    buscarMedicos()
-    buscarPacientes()
+    const id = localStorage.getItem('medico_id')
+    const nome = localStorage.getItem('medico_nome')
+    if (!id || !nome) { navigate('/medico/login'); return }
+    setMedicoId(id)
+    setMedicoNome(nome)
   }, [])
 
-  useEffect(() => {
-    if (convenioNome) {
-      buscarConsultas()
-      buscarHistorico()
-    }
-  }, [dataSelecionada])
+  useEffect(() => { if (medicoId) { buscarConsultas(); buscarPacientes() } }, [dataSelecionada, medicoId])
 
-  const buscarValor = async (nome: string) => {
-    const { data } = await supabase
-      .from('convenios')
-      .select('valor_consulta')
-      .ilike('nome_fantasia', nome)
-      .single()
-    if (data) setConvenioValor(data.valor_consulta || 0)
-  }
-
-  const buscarMedicos = async () => {
-    const { data } = await supabase.from('medicos').select('id, nome').order('nome')
-    if (data) setMedicos(data)
-  }
-
-  const buscarPacientes = async () => {
-    const { data } = await supabase.from('pacientes').select('id, nome, cpf').order('nome')
-    if (data) setPacientes(data)
-  }
+  const formatarDataBR = (data: Date) => `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`
 
   const buscarConsultas = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('consultas')
-      .select('*')
-      .eq('data', dataSelecionada)
-      .eq('tipo', conveniosNome)
-      .order('hora')
-    
-    setConsultas(data || [])
+    setConsultaSelecionada(null)
+    const { data: consultasData } = await supabase.from('consultas').select('*, paciente:pacientes(nome, cpf, telefone)').eq('data', formatarDataBR(dataSelecionada)).eq('medico_id', medicoId).order('hora')
+    if (consultasData) setConsultas(consultasData.map(c => ({ ...c, hora: c.hora?.substring(0, 5) })))
+    else setConsultas([])
     setLoading(false)
   }
 
-  const buscarHistorico = async () => {
-    const { data } = await supabase
-      .from('consultas')
-      .select('id, data, hora, valor')
-      .eq('tipo', convenienteNome)
-      .eq('status', 'finalizada')
-      .order('data', { ascending: false })
-      .limit(20)
-    
-    if (data) setHistorico(data)
-  }
-
-  const criarPaciente = async () => {
-    if (!novoPaciente.nome || !novoPaciente.cpf) return
-
-    const { data } = await supabase
-      .from('pacientes')
-      .insert({
-        nome: novoPaciente.nome,
-        cpf: novoPaciente.cpf,
-        telefone: novoPaciente.telefone || null,
-        whatsapp: novoPaciente.whatsapp || null,
-        cidade: novoPaciente.cidade || null
-      })
-      .select()
-      .single()
-
-    if (data) {
-      setShowCadastrar(false)
-      setNovoPaciente({ nome: '', cpf: '', telefone: '', whatsapp: '', cidade: '' })
-      buscarPacientes()
-      setNovaConsulta({ ...novaConsulta, patiente_id: data.id })
-    }
-  }
+  const buscarPacientes = async () => { const { data } = await supabase.from('pacientes').select('*').order('nome'); if (data) setPacientes(data) }
+  const proximoDia = () => { const d = new Date(dataSelecionada); d.setDate(d.getDate() + 1); setDataSelecionada(d) }
+  const diaAnterior = () => { const d = new Date(dataSelecionada); d.setDate(d.getDate() - 1); setDataSelecionada(d) }
+  const irParaHoje = () => setDataSelecionada(new Date())
+  const formatarData = () => dataSelecionada.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const formatarTelefone = (tel: string) => { if (!tel) return '-'; const n = tel.replace(/\D/g, ''); return n.length >= 10 ? `(${n.slice(2, 4)}) ${n.slice(4, 9)}-${n.slice(9)}` : tel }
 
   const criarConsulta = async () => {
-    if (!novaConsulta.paciente_id || !novaConsulta.medico_id) return
-
-    await supabase.from('consultas').insert({
-      paciente_id: novaConsulta.paciente_id,
-      medico_id: novaConsulta.medico_id,
-      data: novaConsulta.data,
-      hora: novaConsulta.hora,
-      tipo: convenienciaNome,
-      valor: convientValor,
-      status: 'agendada'
+    if (!novaConsulta.paciente_id) return
+    await supabase.from('consultas').insert({ 
+      paciente_id: novaConsulta.paciente_id, 
+      medico_id: medicoId, 
+      data: novaConsulta.data, 
+      hora: novaConsulta.hora, 
+      tipo: 'convenio', 
+      valor: 0, 
+      status: 'agendada' 
     })
-
-    setShowCriar(false)
-    setNovaConsulta({ 
-      paciente_id: '', 
-      medico_id: '', 
-      data: format(new Date(), 'yyyy-MM-dd'), 
-      hora: '09:00' 
-    })
-    
+    setShowModal(null)
+    setNovaConsulta({ paciente_id: '', medico_id: '', data: new Date().toISOString().split('T')[0], hora: '09:00' })
     buscarConsultas()
   }
 
-  const atualizarStatus = async (id: string, status: string) => {
-    await supabase.from('consultas').update({ status }).eq('id', id)
-    buscarConsultas()
-    buscarHistorico()
+  const atualizarStatus = async (id: string, status: string) => { await supabase.from('consultas').update({ status }).eq('id', id); buscarConsultas(); setShowModal(null) }
+
+  const getStatusBadge = (status: string) => {
+    const m: any = { agendada: 'bg-blue-100 text-blue-700', confirmada: 'bg-yellow-100 text-yellow-700', em_atendimento: 'bg-purple-100 text-purple-700', finalizada: 'bg-green-100 text-green-700', cancelada: 'bg-red-100 text-red-700' }
+    return m[status] || 'bg-gray-100 text-gray-700'
   }
 
-  const navegarDia = (dias: number) => {
-    const novaData = addDays(parseISO(dataSelecionada), dias)
-    setDataSelecionada(format(novaData, 'yyyy-MM-dd'))
-  }
-
-  const formatarData = () => {
-    try {
-      return format(parseISO(dataSelecionada), "EEEE, dd 'de' MMMM", { locale: ptBR })
-    } catch {
-      return dataSelecionada
-    }
-  }
-
-  const consultasAgendadas = consultas?.filter(c => c.status === 'agendada') || []
+  const consultasAgendadas = consultas.filter(c => c.status === 'agendada' || c.status === 'confirmada')
+  const consultasFinalizadas = consultas.filter(c => c.status === 'finalizada')
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-gradient-to-r from-teal-700 to-teal-600 text-white">
-        <div className="px-4 py-5">
+      <header className="bg-gradient-to-r from-green-700 to-green-600 text-white">
+        <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Stethoscope className="w-7 h-7" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">{convenioNome}</h1>
-                <p className="text-sm text-teal-100">Valor: R$ {convenioValor}</p>
-              </div>
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center"><Stethoscope className="w-7 h-7" /></div>
+              <div><h1 className="text-xl font-bold">Dr. {medicoNome}</h1><p className="text-sm text-green-100">Convênio</p></div>
             </div>
-            <button onClick={() => { localStorage.clear(); navigate('/convenio/login') }} className="bg-white/20 px-3 py-2 rounded-lg text-sm">
-              Sair
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => { localStorage.clear(); navigate('/medico/login') }} className="bg-white/20 px-3 py-2 rounded-lg text-sm"><LogOut className="w-5 h-5" /></button>
+            </div>
           </div>
         </div>
-
-        <div className="bg-white px-4 py-3 flex gap-2">
-          <Button onClick={() => setShowCriar(!showCriar)} className="flex-1 bg-green-600">
-            <Plus className="w-4 h-4 mr-1" />Nova
-          </Button>
-          <Button onClick={() => setShowCadastrar(!showCadastrar)} variant="outline" className="flex-1">
-            <UserPlus className="w-4 h-4 mr-1" />Cadastrar
-          </Button>
-          <Button onClick={() => setShowHistorico(!showHistorico)} variant="outline" className="flex-1">
-            <History className="w-4 h-4 mr-1" />Historico
-          </Button>
-        </div>
-
-        <div className="bg-white px-4 py-4">
+        <div className="bg-white px-4 py-3">
           <div className="flex items-center justify-between">
-            <button onClick={() => navegarDia(-1)} className="w-12 h-12 bg-gray-100 rounded-full">
-              <ChevronLeft className="w-6 h-6 text-gray-600 mx-auto" />
-            </button>
-            <div className="text-center">
-              <p className="text-lg font-bold text-gray-800">{formatarData()}</p>
-              <p className="text-sm text-gray-500">{consultasAgendadas.length} agenda(s)</p>
+            <button onClick={diaAnterior} className="p-2 bg-gray-100 rounded-full"><ChevronLeft className="w-5 h-5 text-gray-600" /></button>
+            <div className="text-center flex-1">
+              <p className="font-bold text-gray-800 capitalize">{formatarData()}</p>
+              <div className="flex items-center justify-center gap-3 text-sm">
+                <span className="text-blue-600">{consultasAgendadas.length} agendadas</span>
+                <span className="text-green-600">{consultasFinalizadas.length} concluídas</span>
+              </div>
             </div>
-            <button onClick={() => navegarDia(1)} className="w-12 h-12 bg-gray-100 rounded-full">
-              <ChevronRight className="w-6 h-6 text-gray-600 mx-auto" />
-            </button>
+            <div className="flex gap-2">
+              <button onClick={irParaHoje} className="px-3 py-1 bg-gray-100 rounded-lg text-sm text-gray-600">Hoje</button>
+              <button onClick={proximoDia} className="p-2 bg-gray-100 rounded-full"><ChevronRight className="w-5 h-5 text-gray-600" /></button>
+            </div>
           </div>
         </div>
       </header>
 
-      {showCadastrar && (
-        <Card className="m-4">
-          <CardContent className="space-y-4">
-            <h3 className="font-bold text-lg">Cadastrar Paciente</h3>
-            <Input label="Nome *" placeholder="Nome" value={novoPaciente.nome} onChange={(e) => setNovoPaciente({...novoPaciente, nome: e.target.value})} />
-            <Input label="CPF *" placeholder="CPF" value={novoPaciente.cpf} onChange={(e) => setNovoPaciente({...novoPaciente, cpf: e.target.value})} />
-            <Input label="Telefone" placeholder="Telefone" value={novoPaciente.telefone} onChange={(e) => setNovoPaciente({...novoPaciente, telefone: e.target.value})} />
-            <Input label="WhatsApp" placeholder="WhatsApp" value={novoPaciente.whatsapp} onChange={(e) => setNovoPaciente({...novoPaciente, whatsapp: e.target.value})} />
-            <Input label="Cidade" placeholder="Cidade" value={novoPaciente.cidade} onChange={(e) => setNovoPaciente({...novoPaciente, cidade: e.target.value})} />
-            <Button onClick={criarPaciente} className="w-full bg-green-600">Cadastrar</Button>
-          </CardContent>
-        </Card>
-      )}
+      <button onClick={() => setShowModal('nova')} className="fixed bottom-6 right-6 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg z-40"><Plus className="w-7 h-7 text-white" /></button>
 
-      {showCriar && (
-        <Card className="m-4">
-          <CardContent className="space-y-4">
-            <h3 className="font-bold text-lg">Nova Consulta</h3>
-            <select className="w-full p-2.5 border rounded-lg" value={novaConsulta.paciente_id} onChange={(e) => setNovaConsulta({...novaConsulta, pacientes: e.target.value})}>
-              <option value="">Selecione paciente</option>
-              {pacientes.map(p => <option key={p.id} value={p.id}>{p.nome} - {p.cpf}</option>)}
-            </select>
-            <select className="w-full p-2.5 border rounded-lg" value={novaConsulta.medico_id} onChange={(e) => setNovaConsulta({...novaConsulta, profesionales: e.target.value})}>
-              <option value="">Selecione médico</option>
-              {medicos.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-            </select>
-            <div className="grid grid-cols-2 gap-2">
-              <Input type="date" value={novaConsulta.datos} onChange={(e) => setNovaConsulta({...novaConsulta, datos: e.target.value})} />
-              <select className="p-2.5 border rounded-lg" value={novaConsulta.horas} onChange={(e) => setNovaConsulta({...novaConsulta, horas: e.target.value})}>
-                {['08:00','09:00','10:00','11:00','14:00','15:00','16:00','17:00'].map(h => <option key={h} value={h}>{h}</option>)}
-              </select>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg flex justify-between">
-              <span>Valor:</span>
-              <span className="font-bold text-green-600">R$ {convenioValor}</span>
-            </div>
-            <Button onClick={criarConsulta} className="w-full bg-green-600">Criar Consulta</Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {showHistorico && (
-        <Card className="m-4">
-          <CardContent>
-            <h3 className="font-bold text-lg mb-4">Histórico</h3>
-            {historico?.length === 0 ? <p className="text-gray-500">Nenhuma</p> : (
-              <div className="space-y-2">
-                {historico?.map((h: any) => (
-                  <div key={h.id} className="flex justify-between p-2 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500">{h.data}</p>
-                    <span className="text-green-600 font-bold">R$ {h.valor}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      <main className="p-4">
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
-          </div>
-        ) : !consultas || consultas.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-            <p className="text-xl text-gray-600">Nenhuma consulta</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {consultas?.map((c: any) => (
-              <div key={c.id} className="rounded-lg shadow-sm bg-white">
-                <div className="px-4 py-2 bg-gray-50 rounded-t-lg flex justify-between">
-                  <span className="font-bold">{c.hora}</span>
-                  <span className="text-xs text-blue-600">{c.status}</span>
-                </div>
-                <div className="p-4">
-                  <p className="text-gray-500 text-sm">ID: {c.paciente_id}</p>
-                  <div className="flex gap-2 mt-4">
-                    <button onClick={() => window.open('https://wa.me/', '_blank')} className="flex-1 bg-green-500 text-white py-3 rounded-xl">WhatsApp</button>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    {c.status === 'agendada' && <button onClick={() => atualizarStatus(c.id, 'confirmada')} className="flex-1 bg-blue-500 text-white py-2 rounded">Confirmar</button>}
-                    {c.status === 'confirmada' && <button onClick={() => atualizarStatus(c.id, 'em_atendimento')} className="flex-1 bg-purple-500 text-white py-2 rounded">Iniciar</button>}
-                    {c.status === 'em_atendimento' && <button onClick={() => atualizarStatus(c.id, 'finalizada')} className="flex-1 bg-green-500 text-white py-2 rounded">Finalizar</button>}
-                    {c.status === 'finalizada' && <div className="flex-1 bg-green-100 text-green-700 py-2 rounded text-center">Finalizado</div>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      <main className="p-4 pb-20">
+        {loading ? <div className="text-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div></div> : consultas.length === 0 ? <div className="text-center py-12"><Calendar className="w-20 h-20 text-gray-300 mx-auto mb-4" /><p className="text-xl text-gray-600">Nenhuma consulta</p></div> : <div className="space-y-3">{consultas.map((c) => (<div key={c.id} onClick={() => { setConsultaSelecionada(c); setShowModal('detalhes') }} className="bg-white rounded-xl shadow-sm p-4 cursor-pointer"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><div className={`w-12 h-12 rounded-full flex items-center justify-center ${c.status === 'finalizada' ? 'bg-green-100' : c.status === 'em_atendimento' ? 'bg-purple-100' : 'bg-blue-100'}`}><User className={`w-6 h-6 ${c.status === 'finalizada' ? 'text-green-600' : c.status === 'em_atendimento' ? 'text-purple-600' : 'text-blue-600'}`} /></div><div><p className="font-bold">{c.paciente?.nome}</p><p className="text-sm text-gray-500">{c.paciente?.cpf}</p></div></div><div className="text-right"><p className="font-bold text-lg">{c.hora}</p><Badge className={getStatusBadge(c.status)}>{c.status}</Badge></div></div></div>))}</div>}
       </main>
+
+      {showModal === 'detalhes' && consultaSelecionada && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-lg"><CardHeader className="flex flex-row items-center justify-between bg-green-50"><div><h2 className="text-lg font-bold">Detalhes</h2><p className="text-sm text-gray-500">{consultaSelecionada.data} • {consultaSelecionada.hora}</p></div><Button variant="ghost" size="sm" onClick={() => setShowModal(null)}><X className="w-5 h-5" /></Button></CardHeader><CardContent className="space-y-4"><div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl"><div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center"><User className="w-7 h-7 text-green-600" /></div><div><p className="font-bold text-lg">{consultaSelecionada.paciente?.nome}</p><p className="text-sm text-gray-500">CPF: {consultaSelecionada.paciente?.cpf || '-'}</p></div></div><div className="flex items-center gap-3"><Phone className="w-5 h-5 text-gray-400" /><div><p className="text-sm text-gray-500">Telefone</p><p className="font-medium">{formatarTelefone(consultaSelecionada.paciente?.telefone)}</p></div></div><div><p className="text-sm text-gray-500 mb-2">Status</p><Badge className={getStatusBadge(consultaSelecionada.status)}>{consultaSelecionada.status}</Badge></div><div className="flex flex-col gap-2 pt-4 border-t">{consultaSelecionada.status === 'agendada' && (<Button onClick={() => atualizarStatus(consultaSelecionada.id, 'confirmada')} className="w-full bg-yellow-500"><CheckCircle className="w-4 h-4 mr-2" />Confirmar</Button>)}{consultaSelecionada.status === 'confirmada' && (<Button onClick={() => atualizarStatus(consultaSelecionada.id, 'em_atendimento')} className="w-full bg-purple-500"><Activity className="w-4 h-4 mr-2" />Iniciar</Button>)}{consultaSelecionada.status === 'em_atendimento' && (<Button onClick={() => atualizarStatus(consultaSelecionada.id, 'finalizada')} className="w-full bg-green-500"><Check className="w-4 h-4 mr-2" />Finalizar</Button>)}{consultaSelecionada.status === 'em_atendimento' && <Button variant="danger" onClick={() => atualizarStatus(consultaSelecionada.id, 'cancelada')}><XCircle className="w-4 h-4 mr-2" />Cancelar</Button>}</div></CardContent></Card></div>)}
+
+      {showModal === 'nova' && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><Card className="w-full max-w-lg"><CardHeader className="flex flex-row items-center justify-between"><h2 className="text-lg font-bold">Nova Consulta</h2><Button variant="ghost" size="sm" onClick={() => setShowModal(null)}><X className="w-5 h-5" /></Button></CardHeader><CardContent className="space-y-4"><div><label className="block text-sm font-medium mb-2">Paciente *</label><select className="w-full p-3 border rounded-lg" value={novaConsulta.paciente_id} onChange={(e) => setNovaConsulta({...novaConsulta, paciente_id: e.target.value})}><option value="">Selecione</option>{pacientes.map(p => <option key={p.id} value={p.id}>{p.nome} - {p.cpf}</option>)}</select></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-medium mb-2">Data</label><input type="date" className="w-full p-3 border rounded-lg" value={novaConsulta.data} onChange={(e) => setNovaConsulta({...novaConsulta, data: e.target.value})} /></div><div><label className="block text-sm font-medium mb-2">Hora</label><select className="w-full p-3 border rounded-lg" value={novaConsulta.hora} onChange={(e) => setNovaConsulta({...novaConsulta, hora: e.target.value})}>{['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30'].map(h => <option key={h} value={h}>{h}</option>)}</select></div></div><div className="flex gap-2 pt-4"><Button variant="outline" onClick={() => setShowModal(null)} className="flex-1">Cancelar</Button><Button onClick={criarConsulta} className="flex-1 bg-green-500"><Plus className="w-4 h-4 mr-2" />Criar</Button></div></CardContent></Card></div>)}
     </div>
   )
 }
