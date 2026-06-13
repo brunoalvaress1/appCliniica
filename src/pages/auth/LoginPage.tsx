@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, Button } from '../ui/Card'
+import { Card, CardContent, Button } from '../../components/ui/Card'
 import { User, Lock, ArrowRight } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../../lib/supabase'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -35,7 +35,6 @@ export function LoginPage() {
     }
 
     if (data.user) {
-      // Salvar no localStorage
       localStorage.setItem('paciente_id', data.user.id)
       localStorage.setItem('paciente_email', data.user.email || '')
       navigate('/agendamento')
@@ -69,7 +68,7 @@ export function LoginPage() {
       return
     }
 
-    alert('Conta criada! Verifique seu email para confirmar.')
+    alert('Conta criada! Verifique seu email.')
     setIsLogin(true)
     setLoading(false)
   }
