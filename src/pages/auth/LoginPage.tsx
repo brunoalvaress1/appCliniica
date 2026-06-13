@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, Button } from '../../components/ui/Card'
+import { Card, CardContent } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
 import { User, Lock, ArrowRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
