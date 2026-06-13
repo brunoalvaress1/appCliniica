@@ -10,6 +10,7 @@ export function LoginPage() {
   const [modo, setModo] = useState<'login' | 'cadastro'>('login')
   const [loading, setLoading] = useState(false)
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [erro, setErro] = useState('')
   
   const [dados, setDados] = useState({
     email: '',
@@ -21,48 +22,65 @@ export function LoginPage() {
 
   // 🔐 LOGIN
   const fazerLogin = async () => {
+    setErro('')
+    
     if (!dados.email || !dados.senha) {
-      alert('Preencha Email e Senha!')
+      setErro('Preencha Email e Senha!')
       return
     }
 
     setLoading(true)
 
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('email', dados.email)
-      .eq('senha', dados.senha)
-      .single()
+    try {
+      console.log('Procurando usuário com email:', dados.email)
+      
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('email', dados.email)
+        .eq('senha', dados.senha)
+        .single()
 
-    if (error || !data) {
-      alert('Email ou Senha incorretos!')
-      setLoading(false)
-      return
+      console.log('Resultado:', data, error)
+
+      if (error || !data) {
+        setErro('Email ou Senha incorretos!')
+        setLoading(false)
+        return
+      }
+
+      // Salvar sessão
+      localStorage.setItem('paciente_id', data.id)
+      localStorage.setItem('paciente_nome', data.nome)
+      localStorage.setItem('paciente_cpf', data.cpf)
+      
+      console.log('Redirecionando para /agendamento')
+      
+      // Redirecionar para agendamento
+      navigate('/agendamento')
+      
+    } catch (err) {
+      console.log('Erro:', err)
+      setErro('Erro ao fazer login!')
     }
 
-    // Salvar sessão
-    localStorage.setItem('paciente_id', data.id)
-    localStorage.setItem('paciente_nome', data.nome)
-    localStorage.setItem('paciente_cpf', data.cpf)
-    
-    navigate('/')
     setLoading(false)
   }
 
   // 📝 CADASTRAR
   const cadastrar = async () => {
     if (!dados.nome || !dados.cpf || !dados.telefone || !dados.email || !dados.senha) {
-      alert('Preencha todos os campos!')
+      setErro('Preencha todos os campos!')
       return
     }
 
     if (dados.senha.length < 6) {
-      alert('Senha deve ter pelo menos 6 caracteres!')
+      setErro('Senha deve ter pelo menos 6 caracteres!')
       return
     }
 
     setLoading(true)
+    setErro('')
 
     try {
       // Verificar se CPF já existe
@@ -73,7 +91,7 @@ export function LoginPage() {
         .single()
 
       if (existente) {
-        alert('CPF já cadastrado!')
+        setErro('CPF já cadastrado!')
         setLoading(false)
         return
       }
@@ -91,28 +109,16 @@ export function LoginPage() {
         })
 
       if (error) {
-        alert('Erro ao cadastrar: ' + error.message)
+        setErro('Erro ao cadastrar: ' + error.message)
         setLoading(false)
         return
       }
 
-      // Buscar ID criado
-      const { data: usuario } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('cpf', dados.cpf)
-        .single()
-
-      if (usuario) {
-        alert('Cadastro realizado com sucesso!')
-        localStorage.setItem('paciente_id', usuario.id)
-        localStorage.setItem('paciente_nome', dados.nome)
-        localStorage.setItem('paciente_cpf', dados.cpf)
-        navigate('/')
-      }
-    } catch (erro) {
-      alert('Erro ao cadastrar!')
-      console.log(erro)
+      alert('Cadastro realizado com sucesso!')
+      navigate('/agendamento')
+      
+    } catch (err) {
+      setErro('Erro ao cadastrar!')
     }
 
     setLoading(false)
@@ -120,6 +126,7 @@ export function LoginPage() {
 
   const limparCampos = () => {
     setDados({ email: '', senha: '', nome: '', telefone: '', cpf: '' })
+    setErro('')
   }
 
   return (
@@ -135,52 +142,50 @@ export function LoginPage() {
               : 'Preencha seus dados para se cadastrar'}
           </p>
 
+          {erro && (
+            <div className="bg-red-100 text-red-600 p-3 rounded-lg mb-4 text-center">
+              {erro}
+            </div>
+          )}
+
           <div className="space-y-4">
-            {/* Só mostra no cadastro */}
             {modo === 'cadastro' && (
               <>
                 <div>
                   <label className="block text-sm font-medium mb-1">Nome completo</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Seu nome completo"
-                      className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
-                      value={dados.nome}
-                      onChange={(e) => setDados({ ...dados, nome: e.target.value })}
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="Seu nome completo"
+                    className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
+                    value={dados.nome}
+                    onChange={(e) => setDados({ ...dados, nome: e.target.value })}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">CPF</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="000.000.000-00"
-                      className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
-                      value={dados.cpf}
-                      onChange={(e) => setDados({ ...dados, cpf: e.target.value })}
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="000.000.000-00"
+                    className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
+                    value={dados.cpf}
+                    onChange={(e) => setDados({ ...dados, cpf: e.target.value })}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Telefone</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="(11) 99999-9999"
-                      className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
-                      value={dados.telefone}
-                      onChange={(e) => setDados({ ...dados, telefone: e.target.value })}
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="(11) 99999-9999"
+                    className="w-full pl-4 pr-4 py-3 bg-gray-50 rounded-xl"
+                    value={dados.telefone}
+                    onChange={(e) => setDados({ ...dados, telefone: e.target.value })}
+                  />
                 </div>
               </>
             )}
 
-            {/* EMAIL - ambos modos */}
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
               <div className="relative">
@@ -195,14 +200,13 @@ export function LoginPage() {
               </div>
             </div>
 
-            {/* Senha - ambos modos */}
             <div>
               <label className="block text-sm font-medium mb-1">Senha</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type={mostrarSenha ? 'text' : 'password'}
-                  placeholder={modo === 'login' ? 'Sua senha' : 'Mínimo 6 caracteres'}
+                  placeholder="Sua senha"
                   className="w-full pl-10 pr-12 py-3 bg-gray-50 rounded-xl"
                   value={dados.senha}
                   onChange={(e) => setDados({ ...dados, senha: e.target.value })}
@@ -212,53 +216,31 @@ export function LoginPage() {
                   onClick={() => setMostrarSenha(!mostrarSenha)}
                   className="absolute right-3 top-1/2 -translate-y-1/2"
                 >
-                  {mostrarSenha ? (
-                    <EyeOff className="w-5 h-5 text-gray-400" />
-                  ) : (
-                    <Eye className="w-5 h-5 text-gray-400" />
-                  )}
+                  {mostrarSenha ? <EyeOff className="w-5 h-5 text-gray-400" /> : <Eye className="w-5 h-5 text-gray-400" />}
                 </button>
               </div>
             </div>
 
-            {/* Botão principal */}
             <Button
               onClick={modo === 'login' ? fazerLogin : cadastrar}
               disabled={loading}
               className="w-full bg-green-500 mt-4"
             >
-              {loading ? (
-                'Aguarde...'
-              ) : modo === 'login' ? (
-                <>
-                  Entrar <ArrowRight className="w-5 h-5 ml-2" />
-                </>
-              ) : (
-                <>
-                  Criar Conta <ArrowRight className="w-5 h-5 ml-2" />
-                </>
-              )}
+              {loading ? 'Aguarde...' : modo === 'login' ? 'Entrar' : 'Criar Conta'}
             </Button>
 
-            {/* Trocar modo */}
             <p className="text-center mt-4">
               {modo === 'login' ? (
                 <>
                   Não tem conta?{' '}
-                  <button
-                    onClick={() => { setModo('cadastro'); limparCampos() }}
-                    className="text-blue-600 font-medium"
-                  >
+                  <button onClick={() => { setModo('cadastro'); limparCampos() }} className="text-blue-600 font-medium">
                     Criar conta
                   </button>
                 </>
               ) : (
                 <>
                   Já tem conta?{' '}
-                  <button
-                    onClick={() => { setModo('login'); limparCampos() }}
-                    className="text-blue-600 font-medium"
-                  >
+                  <button onClick={() => { setModo('login'); limparCampos() }} className="text-blue-600 font-medium">
                     Fazer login
                   </button>
                 </>
